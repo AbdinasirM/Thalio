@@ -1,8 +1,29 @@
+import smtplib
+# from .forget_password import 
+from email.message import EmailMessage
+import os
+from dotenv import loadenv
 
 
-# set up a gmail to send emails  with six digit code for forget password
 
-# check if the email exists in the db
-# limit how many times the user can do forget password to 3 times in 2 hours
-# make the six digit expire in 6 minutes
+loadenv() 
 
+email = os.getenv("EMAIL_ADDRESS")
+password = os.getenv("EMAIL_PASSWORD")
+port = os.getenv("PORT")
+
+
+def send_email(recipient, subject, body):
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = email
+    msg["To"] = recipient
+    msg.set_content(body)
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", port) as smtp:
+            smtp.login(email,password)
+            smtp.send_message(msg)
+            print("Email sent successfully.")
+    except Exception as e:
+        print(f"Error sending email: {e}")
