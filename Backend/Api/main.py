@@ -10,7 +10,7 @@ from Database.Scripts.create_collection import create_collection
 from Database.Scripts import db_connection
 from Database.Models.user_model import User
 from helpers.forget_password import forget_password
-
+from helpers.code_verification import verify
 
 
 # myuser = {
@@ -45,7 +45,10 @@ from helpers.forget_password import forget_password
 
 
 if __name__ == "__main__":
-    forget_password("abdilion7@gmail.com")
+    result = verify("abdilion7@gmail.com",793917)
+    for data in result:
+        print(result[data])
+    # forget_password("abdilion7@gmail.com")
     # create_user_account(user)
     # result = login("john1@gmail.com", "Secure123!")
     # print(result)
