@@ -85,5 +85,19 @@ class User:
             print("File uploaded and user profile image updated.")
             print("File ID:", file_id)
 
-    #update profile image
+    #update name
+
+    #accept friend request
+
+    #reject friend request
+
+    #create post
+
+    #edit post
+
+    #delete post
+
+    # add comment to post
+
+    # like a post
         

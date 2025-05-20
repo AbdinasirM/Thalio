@@ -39,6 +39,12 @@ from helpers.account import Account
 
 from helpers.user import User
 
+from helpers.users import Users
+
+# Users.all()
+
+result = Users.search_user_by_name("John")
+print(result)
 # def test(email: str, new_password: str, code: int):
 #     verify_result = Account.verify(email, code)
 
@@ -68,15 +74,15 @@ from helpers.user import User
 
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 #    result = test("abdilion7@gmail.com","newpassword",855612)
 #    print(result)
     # result = Account.verify("abdilion7@gmail.com",866781)
     # print(result)
     # Account.forget_password("abdilion7@gmail.com")
     # create_user_account(user)
-    result = Account.login("abdilion7@gmail.com", "newpassword")
-    print(result)
+    # result = Account.login("abdilion7@gmail.com", "newpassword")
+    # print(result)
 
 
 
