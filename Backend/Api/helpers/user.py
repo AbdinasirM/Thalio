@@ -86,6 +86,27 @@ class User:
             print("File ID:", file_id)
 
     #update name
+    @staticmethod
+    def update_name(email:str, new_name:str):
+        #connect to the db
+        client = db_connection.connect()
+        db =client['Data']
+        user_collection = db['users']
+
+        user = user_collection.find_one({'email':email})
+        if not user:
+            return {"success": False, "error": "users not dound."}
+        #update the name
+        result = user_collection.update_one(
+            {"email":email},
+            {'$set' : {"name":new_name}}
+        )
+
+        
+        if result.modified_count == 1:
+            return {"success": True, "message": "Name updated successfully."}
+        else:
+            return {"success": False, "error": "Name update failed or no change made."}
 
     #accept friend request
 
