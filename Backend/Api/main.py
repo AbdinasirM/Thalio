@@ -39,11 +39,13 @@ from helpers.account import Account
 
 from helpers.user import User
 
-from helpers.users import Users
+from Backend.Api.helpers.general import Users
 
 # Users.all()
 
-result = Users.search_user_by_name("John")
+# result = Users.search_user_by_name("John")
+# print(result)
+result = User.update_name("abdilion7@gmail.com", "newname")
 print(result)
 # def test(email: str, new_password: str, code: int):
 #     verify_result = Account.verify(email, code)

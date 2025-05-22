@@ -19,7 +19,7 @@ from Database.Models.userprofile_image_model import UserProfileImage
 from bson import ObjectId
 
 
-class Users :
+class General :
 
     #return all users for the public people side
     @staticmethod
@@ -34,7 +34,6 @@ class Users :
 
         for user in users:
             print(f"User ID: {user['_id']}, Name: {user['name']}, Last Name: {user['last_name']}, Profile Image: {user['profile_image']}")
-
 
     #search a user
     @staticmethod
@@ -51,6 +50,6 @@ class Users :
             # return {"success": True, "users": users_found}
 
 
-    #send a friend request
+
 
     

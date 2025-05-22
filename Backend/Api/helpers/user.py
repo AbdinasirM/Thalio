@@ -108,6 +108,8 @@ class User:
         else:
             return {"success": False, "error": "Name update failed or no change made."}
 
+     #send a friend request
+        
     #accept friend request
 
     #reject friend request
@@ -121,4 +123,5 @@ class User:
     # add comment to post
 
     # like a post
-        
+
+   
