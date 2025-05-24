@@ -1,3 +1,4 @@
+from Backend.Database.Models.post_model import Post
 from dotenv import load_dotenv
 from pathlib import Path
 import os
@@ -115,6 +116,13 @@ class User:
     #reject friend request
 
     #create post
+    def create_post(post:Post, user_id):
+        #connect to the db
+
+        #combine the user is and the post data
+        #save the post to the post collection
+        #update the user and save the post just got created its id into the post list.
+        
 
     #edit post
 
@@ -124,6 +132,6 @@ class User:
 
     # like a post
 
-    
+
 
    
