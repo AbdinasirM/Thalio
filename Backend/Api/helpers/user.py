@@ -1,4 +1,5 @@
-from Backend.Database.Models.post_model import Post
+from Database.Models.post_model import Post
+from Database.Scripts import create_collection
 from dotenv import load_dotenv
 from pathlib import Path
 import os
@@ -13,7 +14,8 @@ import secrets
 import gridfs
 
 
-from Database.Scripts import db_connection
+from  Database.Scripts import db_connection
+
 from Database.Models.user_model import User
 from helpers.account import Account
 from Database.Models.userprofile_image_model import UserProfileImage
@@ -115,23 +117,84 @@ class User:
 
     #reject friend request
 
+
     #create post
-    def create_post(post:Post, user_id):
-        #connect to the db
-
-        #combine the user is and the post data
-        #save the post to the post collection
-        #update the user and save the post just got created its id into the post list.
+    @staticmethod
+    def create_post(post_text: str, post_image: str, user_id: str):
+        # Connect to the db
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
+        post_collection = db["posts"]
         
+        # Convert user_id string to ObjectId
+        mongo_user_id = ObjectId(user_id)
 
-    #edit post
+        # Create Post object
+        post_data_combined_data = Post(
+            post_text=post_text,
+            post_image=post_image,
+            created_at=datetime.now(timezone.utc),
+            created_user=user_id  # Store as str in the Post model
+        )
 
-    #delete post
+        # Save the post to the collection
+        post_dict = post_data_combined_data.model_dump(mode="json")
+        result = post_collection.insert_one(post_dict)
+
+        # Update the user document to include this post ID
+        user_collection.update_one(
+            {"_id": mongo_user_id},
+            {"$push": {"posts": result.inserted_id}}
+        )
+
+        print("Post created successfully.")
+        return result.inserted_id
+
+    # edit post
+
+    # get a post
+    def get_a_post(user_id:str, post_id:str):
+        #connect to db
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
+        post_collection = db["posts"]
+
+        #conver the userid into object_id
+        converted_user_id = ObjectId(user_id)
+        converted_post_id = ObjectId(post_id)
+
+        post = post_collection.find_one(
+             {"_id": converted_post_id,
+             "created_user": user_id
+             }
+        )
+        return post
+
+    # get all posts
+    def get_all_posts(user_id:str):
+
+        #connect to db
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
+        post_collection = db["posts"]
+
+        #conver the userid into object_id
+        converted_user_id = ObjectId(user_id)
+        
+        #save all the post ids into a list from the user collections
+        user = user_collection.find_one(
+        {"_id": converted_user_id},
+        {"posts": 1, "_id": 0}
+        )
+
+        post_id_list = user.get("posts", []) if user else []
+        posts = post_collection.find({"_id": {"$in": post_id_list}})
+
+        #in for loop return all the posts that have the same ids in the post id lists
+        return list(posts)
+    # delete post
 
     # add comment to post
-
-    # like a post
-
-
-
-   
