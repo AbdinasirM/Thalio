@@ -67,11 +67,14 @@ user_id = "6822b9997cb3da3916be7f4f"
 # except Exception as e:
 #     print("Error from the test:", e)  # Optional for debugging
 
-post = User.get_a_post("6822b9997cb3da3916be7f4f", "683390ac1a6ac29e731c40da")
-print(post)
+# post = User.get_a_post("6822b9997cb3da3916be7f4f", "683390ac1a6ac29e731c40da")
+# print(post)
 
-all_posts = User.get_all_posts("6822b9997cb3da3916be7f4f")
-print(all_posts)
+# all_posts = User.get_all_posts("6822b9997cb3da3916be7f4f")
+# print(all_posts)
+
+result = User.edit_post("683390ac1a6ac29e731c40da", "6822b9997cb3da3916be7f4f","Post text has been updated", "")
+print(result)
 
 
 # def test(email: str, new_password: str, code: int):
@@ -96,13 +99,6 @@ print(all_posts)
 #         print("Error:", e)
 
     
-
-
-
-
-
-
-
 # if __name__ == "__main__":
 #     test_creating_post()
 #    result = test("abdilion7@gmail.com","newpassword",855612)

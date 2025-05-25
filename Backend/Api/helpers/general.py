@@ -49,8 +49,8 @@ class General :
                  return (f"User ID: {user['_id']}, Name: {user['name']}, Last Name: {user['last_name']}, Profile Image: {user['profile_image']}")
             # return {"success": True, "users": users_found}
 
+    #return all the data for the current logged in user: user stuff, posts, friends
     
-
 
 
     
