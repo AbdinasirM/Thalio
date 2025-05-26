@@ -152,6 +152,40 @@ class User:
         return result.inserted_id
 
     # edit post
+    def edit_post(post_id:str, user_id:str,post_text: str, post_image: str):
+        
+        #connect to db
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
+        post_collection = db["posts"]
+        
+        #conver the userid into object_id
+        converted_user_id = ObjectId(user_id)
+        converted_post_id = ObjectId(post_id)
+        
+        # Build the update dictionary dynamically
+        update_fields = {}
+        if post_text is not None:
+            update_fields["post_text"] = post_text
+
+        if post_image is not None:
+            update_fields["post_image"] = post_image
+            
+        if not update_fields:
+            print("Nothing to update.")
+            return False
+        
+        post_collection.update_one(
+            {
+                "_id":converted_post_id,
+                "created_user": user_id            
+            },
+            {
+                "$set":update_fields
+            }
+        )
+
 
     # get a post
     def get_a_post(user_id:str, post_id:str):
@@ -164,7 +198,8 @@ class User:
         #conver the userid into object_id
         converted_user_id = ObjectId(user_id)
         converted_post_id = ObjectId(post_id)
-
+        
+     
         post = post_collection.find_one(
              {"_id": converted_post_id,
              "created_user": user_id
@@ -195,6 +230,7 @@ class User:
 
         #in for loop return all the posts that have the same ids in the post id lists
         return list(posts)
+    
     # delete post
 
     # add comment to post
