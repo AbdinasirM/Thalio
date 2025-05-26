@@ -8,6 +8,7 @@ from email.message import EmailMessage
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from datetime import datetime, timedelta, timezone
+from Database.Models.comment_model import Comment
 
 import uuid
 import secrets
@@ -24,7 +25,7 @@ from bson import ObjectId
 class User:
 
     @staticmethod
-        #update password
+    #update password
     def update_password(email: str, new_password: str):
         try:
             # Connect to the DB
@@ -52,8 +53,6 @@ class User:
 
         except Exception as e:
             return {"success": False, "error": str(e)}
-
-    #update user profile: name, email, image
 
     #set profile image
     def set_profile_image(file, user_id):
@@ -113,11 +112,6 @@ class User:
 
      #send a friend request
         
-    #accept friend request
-
-    #reject friend request
-
-
     #create post
     @staticmethod
     def create_post(post_text: str, post_image: str, user_id: str):
@@ -186,7 +180,6 @@ class User:
             }
         )
 
-
     # get a post
     def get_a_post(user_id:str, post_id:str):
         #connect to db
@@ -232,5 +225,156 @@ class User:
         return list(posts)
     
     # delete post
+    def delete_post(post_id:str, user_id:str):
+        #connect to db
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
+        post_collection = db["posts"]
 
+        #conver the userid into object_id
+        converted_post_id = ObjectId(post_id)
+        converted_user_id = ObjectId(user_id)
+
+
+        post_query = {
+        "_id": converted_post_id,
+        "created_user": user_id
+        
+        }
+        result = post_collection.delete_one(post_query)
+        if result.deleted_count ==1:
+            user_collection.update_one(
+                {"_id":converted_user_id},
+                {"$pull": {"posts":converted_post_id}}
+            )
+            print("Post deleted successfully")
+            return True
+        else:
+            print("No post deleted. It may not exist or does not belong to this user.")
+        return False
+    
+    #accept friend request
+    def accept_friend_request(user_id:str, sender_id:str):
+        #connect to db
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
+
+        #conver the userid into object_id
+        current_user_id = ObjectId(user_id)
+        sender_user_id = ObjectId(sender_id)
+
+        # Step 1: Check if a friend request exists
+        user = user_collection.find_one(
+            {""
+            "_id":current_user_id, 
+            "friend_requests_received": sender_id
+            },)
+        if not user:
+            print("No friend request found.")
+            return False
+        
+         # Step 2: Update current user (receiver)
+        user_collection.update_one(
+            {"_id": current_user_id},
+            {
+                "$pull": {"friend_requests_received": str(sender_user_id)},
+                "$addToSet": {"friends": str(sender_user_id)}
+            }
+        )
+
+        # Step 3: Update the user who sent the request
+        user_collection.update_one(
+            {"_id": sender_user_id},
+            {
+                "$pull": {"friend_requests_sent": str(current_user_id)},
+                "$addToSet": {"friends": str(current_user_id)}
+            }
+        )
+        print("Friend request accepted successfully.")
+        return True
+
+    #reject friend request
+    def reject_friend_request(user_id: str, sender_id: str):
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
+
+        current_user_id = ObjectId(user_id)
+        sender_user_id = ObjectId(sender_id)
+
+        # Step 1: Check if a friend request exists
+        user = user_collection.find_one(
+            {
+                "_id": current_user_id,
+                "friend_requests_received": str(sender_user_id)
+            }
+        )
+
+        if not user:
+            print("No friend request found.")
+            return False
+
+        # Step 2: Remove the friend request
+        user_collection.update_one(
+            {"_id": current_user_id},
+            {"$pull": {"friend_requests_received": str(sender_user_id)}}
+        )
+
+        user_collection.update_one(
+            {"_id": sender_user_id},
+            {"$pull": {"friend_requests_sent": str(current_user_id)}}
+        )
+
+        print("Friend request rejected successfully.")
+        return True
+
+    
     # add comment to post
+    def add_comment(comment:Comment):
+        #connect to the db
+        client = db_connection.connect()
+        db = client['Data']
+        post_collection = db['posts']
+
+        post_id = ObjectId(comment.post_id)
+
+        # Check if the post exists
+        post = post_collection.find_one({"_id": post_id})
+        if not post:
+            print("Post not found")
+            return "Post not found"
+        
+        # Add the comment to the post
+        post_collection.update_one(
+            {"_id": post_id},
+            {"$push": {"comments": comment.model_dump(mode="json")}}
+        )
+        print("Comment added successfully.")
+        return "Comment added successfully"
+
+    # delete comment
+    def delete_comment(user_id:str,post_id:str, comment_id:str):
+        #connect to the db
+        client = db_connection.connect()
+        db = client['Data']
+        post_collection = db['posts']
+
+        post_id = ObjectId(post_id)
+        user_id = ObjectId(user_id)
+        comment_uuid = uuid.UUID(comment_id)  # keep comment_id as UUID
+
+        # Check if the post exists
+        post = post_collection.find_one({"_id": post_id})
+        if not post:
+            print("Post not found")
+            return "Post not found"
+        
+        # delete the comment to the post
+        post_collection.update_one(
+            {"_id": post_id},
+            {"$pull": {"comments":{"comment_id":comment_id}}}
+        )
+        print("Comment deleted successfully.")
+        return "Comment deleted successfully"

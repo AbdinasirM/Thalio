@@ -10,7 +10,8 @@ class User(BaseModel):
     password: str = Field(...)
     profile_image: str   = Field(default="")
     online_status: bool  = Field(default=False)
-    friend_requests: List[UUID] = Field(default_factory=list)
+    friend_requests_sent: List[UUID] = Field(default_factory=list)
+    friend_requests_received: List[UUID] = Field(default_factory=list)
     friends: List[UUID] = Field(default_factory=list)
     posts: List[UUID] = Field(default_factory=list)
  
