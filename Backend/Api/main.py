@@ -99,8 +99,12 @@ post_id = "6833bf9648488ca96b754316"
 # comment = Comment(**mycomment)
 # User.add_comment(comment)
 
-result = User.delete_comment("6833e43573b27b9b02c732a5","6833ea09d3077d762e9a8d64","2467b456-0f5e-4ef4-b623-ed9b8c2b0fc9" )
+# result = User.delete_comment("6833e43573b27b9b02c732a5","6833ea09d3077d762e9a8d64","2467b456-0f5e-4ef4-b623-ed9b8c2b0fc9" )
+# result = User.like_a_post("6833ea09d3077d762e9a8d64","6833e4254bd47b56257a5576")
+# print(result)
 
+result = User.dislike_a_post("6833ea09d3077d762e9a8d64","6833e4254bd47b56257a5576")
+print(result)
 # result = General.send_friend_request("6833e4254bd47b56257a5576", "6833e43573b27b9b02c732a5")
 
 # result = User.accept_friend_request("6833c972421e4fd2c5ac45f1", "6833ca0e9f9a9fa33e715dfe")

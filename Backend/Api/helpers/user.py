@@ -55,6 +55,7 @@ class User:
             return {"success": False, "error": str(e)}
 
     #set profile image
+    @staticmethod
     def set_profile_image(file, user_id):
 
         # Connect to the correct databases
@@ -146,6 +147,7 @@ class User:
         return result.inserted_id
 
     # edit post
+    @staticmethod
     def edit_post(post_id:str, user_id:str,post_text: str, post_image: str):
         
         #connect to db
@@ -181,6 +183,7 @@ class User:
         )
 
     # get a post
+    @staticmethod
     def get_a_post(user_id:str, post_id:str):
         #connect to db
         client = db_connection.connect()
@@ -201,6 +204,7 @@ class User:
         return post
 
     # get all posts
+    @staticmethod
     def get_all_posts(user_id:str):
 
         #connect to db
@@ -225,6 +229,7 @@ class User:
         return list(posts)
     
     # delete post
+    @staticmethod
     def delete_post(post_id:str, user_id:str):
         #connect to db
         client = db_connection.connect()
@@ -254,6 +259,7 @@ class User:
             print("No post deleted. It may not exist or does not belong to this user.")
         return False
     
+    @staticmethod
     #accept friend request
     def accept_friend_request(user_id:str, sender_id:str):
         #connect to db
@@ -295,6 +301,7 @@ class User:
         print("Friend request accepted successfully.")
         return True
 
+    @staticmethod
     #reject friend request
     def reject_friend_request(user_id: str, sender_id: str):
         client = db_connection.connect()
@@ -330,7 +337,7 @@ class User:
         print("Friend request rejected successfully.")
         return True
 
-    
+    @staticmethod
     # add comment to post
     def add_comment(comment:Comment):
         #connect to the db
@@ -354,7 +361,8 @@ class User:
         print("Comment added successfully.")
         return "Comment added successfully"
 
-    # delete comment
+    @staticmethod
+    # delete comment 
     def delete_comment(user_id:str,post_id:str, comment_id:str):
         #connect to the db
         client = db_connection.connect()
@@ -378,3 +386,100 @@ class User:
         )
         print("Comment deleted successfully.")
         return "Comment deleted successfully"
+
+
+    @staticmethod
+    def like_a_post(post_id:str, user_id:str):
+        #connect to the db
+        client = db_connection.connect()
+        db = client["Data"]
+        
+        user_collection = db["users"]
+        post_collection = db["posts"]
+
+        current_post_id = ObjectId(post_id)
+
+        current_user_id = ObjectId(user_id)
+
+        
+        #check if the user exists
+        user = user_collection.find_one(
+            {"_id":current_user_id}
+        )
+        if not user:
+            return "user doesn't exist"
+        
+        #check if the post exists
+        post = post_collection.find_one(
+            {"_id":current_post_id}
+        )
+        if not post:
+            return "post doesn't exist"
+
+        #add the user id in the likes lists inside the post
+        result = post_collection.update_one(
+            {"_id":current_post_id},
+
+            {"$addToSet":{"likes":current_user_id}}
+        )
+
+        if result.modified_count == 1:
+            print("successfully added like to the post")
+            return True
+        
+        else:
+           print("Like not added (user may have already liked)")
+           return False
+        
+
+    @staticmethod
+    def dislike_a_post(post_id:str, user_id:str):
+        #connect to the db
+        client = db_connection.connect()
+        db = client["Data"]
+        
+        user_collection = db["users"]
+        post_collection = db["posts"]
+
+        current_post_id = ObjectId(post_id)
+        current_user_id = ObjectId(user_id)
+
+        
+        #check if the user exists
+        user = user_collection.find_one(
+            {"_id":current_user_id}
+        )
+        if not user:
+            return "user doesn't exist"
+        
+        #check if the post exists
+        post = post_collection.find_one(
+            {"_id":current_post_id}
+        )
+        if not post:
+            return "post doesn't exist"
+
+        dislike_a_post = post_collection.update_one(
+            {"_id":current_post_id,
+             "likes":current_user_id
+             },
+             {"$pull":{"likes":current_user_id}}
+        )
+        if dislike_a_post:
+            print("Disliked the post")
+            return True
+        else:
+            print("User didn't like this post")
+            return False
+        #add the user id in the likes lists inside the post
+        
+
+        if dislike_a_post.modified_count == 1:
+            print("successfully disliked the post")
+            return True
+        
+        else:
+           print("user never liked the post")
+           return False
+
+
