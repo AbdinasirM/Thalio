@@ -18,3 +18,4 @@ def encode_jwt(payload_data):
 def decode_jwt(encoded_token):
     decoded = jwt.decode(encoded_token,  key='my_super_secret', algorithms=['HS256'])
     print("Decoded Payload:", decoded)
+
