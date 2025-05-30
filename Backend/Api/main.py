@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import sys
 import os
 import uuid
@@ -103,8 +103,29 @@ post_id = "6833bf9648488ca96b754316"
 # result = User.like_a_post("6833ea09d3077d762e9a8d64","6833e4254bd47b56257a5576")
 # print(result)
 
-result = User.dislike_a_post("6833ea09d3077d762e9a8d64","6833e4254bd47b56257a5576")
-print(result)
+# result = User.dislike_a_post("6833ea09d3077d762e9a8d64","6833e4254bd47b56257a5576")
+# print(result)
+
+
+#testing the jwt:
+from helpers.jtw_generation import jwt_manager
+from Database.Models.jwt_payload_model import Payload
+
+# my_payload = {
+#     "subject":"test",
+#     "username":"abdi",
+#     "user_id" : 1234,
+#     "created_at": datetime.now(),
+#     "expires_at" :datetime.now()  + timedelta(minutes=5)
+# }
+
+
+# payload = Payload(**my_payload)
+
+# jwt_manager.encode_jwt(payload)
+
+jwt_manager.decode_jwt("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWJqZWN0IjoidGVzdCIsInVzZXJuYW1lIjoiYWJkaSIsInVzZXJfaWQiOjEyMzQsImNyZWF0ZWRfYXQiOiIyMDI1LTA1LTI5VDIyOjE0OjUwLjIwMTA5NiIsImV4cGlyZXNfYXQiOiIyMDI1LTA1LTI5VDIyOjE5OjUwLjIwMTA5NiJ9.8mXDT_RXXW5d8_UnDE7zp1JFsT-aKgaeVuGty9tL43o")
+
 # result = General.send_friend_request("6833e4254bd47b56257a5576", "6833e43573b27b9b02c732a5")
 
 # result = User.accept_friend_request("6833c972421e4fd2c5ac45f1", "6833ca0e9f9a9fa33e715dfe")
