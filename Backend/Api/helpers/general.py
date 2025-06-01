@@ -12,11 +12,11 @@ import secrets
 import gridfs
 
 
-from Database.Scripts import db_connection
-from Database.Models.user_model import User
-from Database.Models.comment_model import Comment
+from database.Scripts import db_connection
+from database.Models.user_model import UserModel
+from database.Models.comment_model import Comment
 from helpers.account import Account
-from Database.Models.userprofile_image_model import UserProfileImage
+from database.Models.userprofile_image_model import UserProfileImage
 from bson import ObjectId
 
 

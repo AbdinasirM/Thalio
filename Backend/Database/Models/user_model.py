@@ -3,7 +3,7 @@ from typing import List
 from uuid import UUID
 from datetime import datetime
 
-class User(BaseModel):
+class UserModel(BaseModel):
     name: str = Field(...)
     last_name: str  = Field(default="")
     email: str =  Field(...)

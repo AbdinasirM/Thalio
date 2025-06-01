@@ -11,10 +11,10 @@ from dateutil import parser
 import uuid
 import secrets
 
-from Database.Scripts import db_connection
-from Database.Scripts.create_collection import create_collection
-from Database.Models.user_model import User
-from Database.Models.forget_password_model import Forget_Password
+from database.Scripts import db_connection
+from database.Scripts.create_collection import create_collection
+from database.Models.user_model import UserModel
+from database.Models.forget_password_model import Forget_Password
 
 # Load environment variables
 env_path = Path(__file__).resolve().parent / "forget_email_creds" / ".env"
@@ -28,7 +28,7 @@ SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 
 class Account:
     @staticmethod
-    def create_user_account(user: User):
+    def create_user_account(user: UserModel):
         try:
             # Step 1: Validate email
             validated_email = Account.validate_emails(user.email)

@@ -1,5 +1,5 @@
-from Database.Models.post_model import Post
-from Database.Scripts import create_collection
+from database.Models.post_model import Post
+from database.Scripts import create_collection
 from dotenv import load_dotenv
 from pathlib import Path
 import os
@@ -8,18 +8,18 @@ from email.message import EmailMessage
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from datetime import datetime, timedelta, timezone
-from Database.Models.comment_model import Comment
+from database.Models.comment_model import Comment
 
 import uuid
 import secrets
-import gridfs
+# import gridfs
 
 
-from  Database.Scripts import db_connection
+from  database.Scripts import db_connection
 
-from Database.Models.user_model import User
+from database.Models.user_model import UserModel
 from helpers.account import Account
-from Database.Models.userprofile_image_model import UserProfileImage
+from database.Models.userprofile_image_model import UserProfileImage
 from bson import ObjectId
 
 class User:
