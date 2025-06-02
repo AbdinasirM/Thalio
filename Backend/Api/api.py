@@ -1,5 +1,10 @@
 from datetime import datetime, timedelta
-import gridfs
+
+from pymongo import MongoClient
+
+from gridfs import GridFSBucket
+from bson import ObjectId
+from io import BytesIO
 
 from fastapi import FastAPI, HTTPException, Request,UploadFile, File, Form
 from pymongo.errors import PyMongoError
@@ -63,7 +68,6 @@ def sign_up(user: UserModel):
         except:
             pass
 
-
 @app.post("/sign_in")
 def sign_in(request: Request, body:LoginRequest):
         try:
@@ -113,7 +117,6 @@ def sign_in(request: Request, body:LoginRequest):
             except:
                 pass
 
-
 @app.get("/all_users")
 def get_all_users():
         
@@ -146,7 +149,6 @@ def get_all_users():
                 client.close()
             except:
                 pass
-
 
 @app.post("/get_user")
 def get_current_logged_in(payload: TokenRequest):
@@ -190,39 +192,47 @@ def get_current_logged_in(payload: TokenRequest):
             client.close()
         except:
             pass
+
 @app.post("/set_profile_img")
 def set_profile_image(
     file: UploadFile = File(...),
     token: str = Form(...)
-):
+    ):
     try:
-        # Connect to databases
+        # 1. Decode JWT → get string user_id, convert to ObjectId
+        user_decoded = jwt_manager.decode_jwt(token)
+        user_obj_id = ObjectId(user_decoded["user_id"])
+
+        # 2. Connect to MongoDB
         client = db_connection.connect()
         file_db = client["FileDB"]
         data_db = client["Data"]
+        user_coll = data_db["users"]
 
-        user_decoded_data = jwt_manager.decode_jwt(token)
-        user_id = user_decoded_data["user_id"]
+        # 3. Create a GridFSBucket on FileDB
+        fs_bucket = GridFSBucket(file_db)
 
-        user_collection = data_db["users"]
-        userprofile_bucket = gridfs.GridFS(file_db)
+        # 4. Read file bytes and wrap in BytesIO
+        contents = file.file.read()
+        stream = BytesIO(contents)
 
-        file_contents = file.file.read()
-
-        file_id = userprofile_bucket.put(
-            file_contents,
-            filename=file.filename,
-            contentType=file.content_type,
-            user_id=ObjectId(user_id)
+        # 5. Upload via GridFSBucket.upload_from_stream
+        new_file_id = fs_bucket.upload_from_stream(
+            file.filename or "profile_image.png",
+            stream,
+            metadata={
+                "contentType": file.content_type,
+                "user_id": user_obj_id
+            }
         )
 
-        result = user_collection.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": {"profile_image": file_id}}
+        # 6. Update user’s profile_image with new_file_id
+        result = user_coll.update_one(
+            {"_id": user_obj_id},
+            {"$set": {"profile_image": new_file_id}}
         )
-
-        if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="User not found or image not updated.")
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found.")
 
         return {"success": True, "message": "File uploaded and profile image updated"}
 
@@ -231,16 +241,18 @@ def set_profile_image(
     except InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token.")
     except PyMongoError as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
     finally:
         try:
             client.close()
         except:
             pass
+
 #forget password
 
+#update password
 #send a friend request
     
 #search a user by name

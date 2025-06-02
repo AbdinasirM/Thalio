@@ -170,7 +170,7 @@
 
 
 
-
-import sys, gridfs
-print(">>> sys.executable:", sys.executable)
-print(">>> gridfs module path:", getattr(gridfs, "__file__", None))
+import gridfs
+from gridfs import GridFSBucket
+print(gridfs)           # should point to something like .../site-packages/gridfs/__init__.py
+print(GridFSBucket)     # should show the class path, e.g. <class 'gridfs.grid_file.GridFSBucket'>
