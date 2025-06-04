@@ -26,6 +26,7 @@ from database.Scripts.create_collection import create_collection
 
 from Api.helpers.account import Account
 from Api.helpers.jtw_generation import jwt_manager
+from fastapi.encoders import jsonable_encoder
 
 
 app = FastAPI()
@@ -120,7 +121,6 @@ def sign_in(request: Request, body:LoginRequest):
                 client.close()
             except:
                 pass
-
 
 @app.post("/set_profile_img")
 def set_profile_image(
@@ -272,49 +272,55 @@ def update_password(update_data:UpdatePassword):
 
 @app.get("/all_users")
 def get_all_users():
-        
-        try:
-            #connect to the db
-            client = db_connection.connect()
-            db = client['Data']
-            users_collection = db['users']
-            users = list(users_collection.find())
-            if not users:
-                        return {"success": False, "error": "users not dound."}
-            
-            all_users = []
+    client = None
+    try:
+        # 1) Connect to the database
+        client = db_connection.connect()
+        db = client["Data"]
+        users_collection = db["users"]
+        users = list(users_collection.find())
 
-            for user in users:
-                #conver the user id into string from uuid
-                user["_id"] = str(user["_id"])
+        # 2) If no users found, return an empty list (or a 404, your choice)
+        if not users:
+            return {"success": False, "error": "users not found."}
 
-                # Clean sensitive fields before returning
-                user.pop("password", None)
-                all_users.append( {"user_id":user['_id'], "first_name":user['name'], "last_name":user['last_name'], "Profile Image":user['profile_image']})
-            return {"success": True, "users": all_users}
-        
-        except PyMongoError as e:
-            raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
-        finally:
-            try:
-                client.close()
-            except:
-                pass
+        all_users = []
+        for user in users:
+              # Convert the main _id
+            user["_id"] = str(user["_id"])
+
+            # If there’s a profile_image ObjectId, convert that too
+            if isinstance(user.get("profile_image"), ObjectId):
+                user["profile_image"] = str(user["profile_image"])
+
+            # 5) Build a safe, minimal dict for each user
+            all_users.append({
+                "user_id":      user["_id"],
+                "first_name":   user.get("name", ""),
+                "last_name":    user.get("last_name", ""),
+                "profile_image": user.get("profile_image", "")
+            })
+
+        return {"success": True, "users": all_users}
+
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    finally:
+        # 6) Only close client if it was actually created
+        if client:
+            client.close()
 
 @app.post("/get_user")
 def get_current_logged_in(payload: TokenRequest):
+    client = None
     try:
         token = payload.token
-
-        # Decode the token
         user_info = jwt_manager.decode_jwt(token)
-
         user_id = user_info["user_id"]
         email = user_info["email"]
 
-        # Connect to the DB
         client = db_connection.connect()
         db = client["Data"]
         user_collection = db["users"]
@@ -323,30 +329,37 @@ def get_current_logged_in(payload: TokenRequest):
             "_id": ObjectId(user_id),
             "email": email
         })
-
         if not user:
             raise HTTPException(status_code=404, detail="User not found.")
 
-        user["_id"] = str(user["_id"])
+        # Remove sensitive field
         user.pop("password", None)
 
-        return {"success": True, "user": user}
+        # Now ask FastAPI to convert ANY ObjectId (even nested) to str:
+        safe_user = jsonable_encoder(
+            user,
+            custom_encoder={ObjectId: str}
+        )
+        # safe_user now contains only JSON‐serializable types
+
+        return {"success": True, "user": safe_user}
 
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired.")
     except InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token.")
     except PyMongoError as e:
-        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
-    finally:
-        try:
-            client.close()
-        except:
-            pass
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+
 
 #search a user by name
+# @app.get("/search_user_by_name")
+# def search_user_by_name():
+#     try:
+          
+#     catch (Exception as ex)
 
 #send a friend request
     
@@ -363,5 +376,3 @@ def get_current_logged_in(payload: TokenRequest):
 # like a post
 
 # un like a post
-
-
