@@ -13,6 +13,7 @@ from jwt import ExpiredSignatureError, InvalidTokenError
 from bson import ObjectId
 
 
+from database.Models.friend_request_model import FriendRequestModel
 from database.Models.user_search_request_model import UserSearchRequestModel
 from database.Models.update_password_model import UpdatePassword
 from database.Models.forget_password_request_model  import ForgetPasswordRequestModel
@@ -391,7 +392,47 @@ def search_user_by_name(request: UserSearchRequestModel):
 
 
 #send a friend request
-    
+@app.post("/send_a_friend_request")
+def send_a_friend_request(friend_request:FriendRequestModel):
+    try:
+        #connect to the db
+        client = db_connection.connect()
+        db = client['Data']
+        user_collection = db['users']
+        
+        current_user_id = ObjectId(friend_request.current_user_id)
+        friend_id = ObjectId(friend_request.friend_id)
+
+         # Update the recipient's 'friend_requests_received'
+        friend_result = user_collection.update_one(
+            {"_id": friend_id},
+            {"$addToSet": {"friend_requests_received": str(current_user_id)}}
+        )
+
+        # Update the sender's 'friend_requests_sent'
+        current_user_result = user_collection.update_one(
+            {"_id": current_user_id},
+            {"$addToSet": {"friend_requests_sent": str(friend_id)}}
+        )
+
+        if friend_result.modified_count == 1 and current_user_result.modified_count == 1:
+            print("Friend request sent successfully.")
+            return True
+        else:
+            print("Failed to send friend request.")
+            return False
+
+    except ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+
+
+     
 #accept friend request
 
 #reject freind request
