@@ -13,6 +13,7 @@ from jwt import ExpiredSignatureError, InvalidTokenError
 from bson import ObjectId
 
 
+from database.Models.user_search_request_model import UserSearchRequestModel
 from database.Models.update_password_model import UpdatePassword
 from database.Models.forget_password_request_model  import ForgetPasswordRequestModel
 from database.Models.forget_password_model import Forget_Password
@@ -354,12 +355,40 @@ def get_current_logged_in(payload: TokenRequest):
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
 
 
+
+
 #search a user by name
-# @app.get("/search_user_by_name")
-# def search_user_by_name():
-#     try:
+@app.get("/search_user_by_name")
+def search_user_by_name(request: UserSearchRequestModel):
+    try:
+        username = request.username
+        client = db_connection.connect()
+        db = client['Data']
+        user_collection = db['users']
+        users_found = list(user_collection.find({'name': {'$regex': f'^{username}$', '$options': 'i'}}))
+        if not users_found:
+            return {"success": False, "error": "no users with that name found."}
+        for user in users_found:
+            
+            # Remove sensitive field
+            user.pop("password", None)
+
+            # Now ask FastAPI to convert ANY ObjectId (even nested) to str:
+            safe_user = jsonable_encoder(
+                user,
+                custom_encoder={ObjectId: str}
+            )
+            return {"success": True, "user": safe_user}
           
-#     catch (Exception as ex)
+    except ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+
 
 #send a friend request
     
