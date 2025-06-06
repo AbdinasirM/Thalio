@@ -432,9 +432,58 @@ def send_a_friend_request(friend_request:FriendRequestModel):
             raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
 
 
-     
 #accept friend request
+@app.post("/accept_friend_request")
+def accept_friend_request(friend_request:FriendRequestModel):
+    try:
+        #connect to db
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
 
+        #convert the userid into object_id
+        current_user_id = ObjectId(friend_request.current_user_id)
+        sender_user_id = ObjectId(friend_request.friend_id)
+
+        # Step 1: Check if a friend request exists
+        user = user_collection.find_one(
+            {""
+            "_id":current_user_id, 
+            "friend_requests_received": str(sender_user_id)
+            },)
+        if not user:
+            print("No friend request found.")
+            return False
+        
+         # Step 2: Update current user (receiver)
+        user_collection.update_one(
+            {"_id": current_user_id},
+            {
+                "$pull": {"friend_requests_received": str(sender_user_id)},
+                "$addToSet": {"friends": str(sender_user_id)}
+            }
+        )
+
+        # Step 3: Update the user who sent the request
+        user_collection.update_one(
+            {"_id": sender_user_id},
+            {
+                "$pull": {"friend_requests_sent": str(current_user_id)},
+                "$addToSet": {"friends": str(current_user_id)}
+            }
+        )
+        print("Friend request accepted successfully.")
+        return True
+
+    except ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+    
 #reject freind request
 
 # get all posts: for the public
