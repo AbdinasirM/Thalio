@@ -354,9 +354,11 @@ def get_current_logged_in(payload: TokenRequest):
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
-
-
-
+    finally:
+        try:
+            client.close()
+        except:
+            pass
 
 #search a user by name
 @app.get("/search_user_by_name")
@@ -389,7 +391,11 @@ def search_user_by_name(request: UserSearchRequestModel):
             raise HTTPException(status_code=500, detail=f"Database error: {e}")
     except Exception as e:
             raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
-
+    finally:
+        try:
+            client.close()
+        except:
+            pass
 
 #send a friend request
 @app.post("/send_a_friend_request")
@@ -430,7 +436,11 @@ def send_a_friend_request(friend_request:FriendRequestModel):
             raise HTTPException(status_code=500, detail=f"Database error: {e}")
     except Exception as e:
             raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
-
+    finally:
+        try:
+            client.close()
+        except:
+            pass
 
 #accept friend request
 @app.post("/accept_friend_request")
@@ -483,10 +493,138 @@ def accept_friend_request(friend_request:FriendRequestModel):
             raise HTTPException(status_code=500, detail=f"Database error: {e}")
     except Exception as e:
             raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
-    
+    finally:
+        try:
+            client.close()
+        except:
+            pass
+
 #reject freind request
+@app.post("/reject_freind_request")
+def reject_freind_request(friend_request:FriendRequestModel):
+    try:
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
+
+        current_user_id = ObjectId(friend_request.current_user_id)
+        sender_user_id = ObjectId(friend_request.friend_id)
+
+        # Step 1: Check if a friend request exists
+        user = user_collection.find_one(
+            {
+                "_id": current_user_id,
+                "friend_requests_received": str(sender_user_id)
+            }
+        )
+
+        if not user:
+            print("No friend request found.")
+            return False
+
+        # Step 2: Remove the friend request
+        user_collection.update_one(
+            {"_id": current_user_id},
+            {"$pull": {"friend_requests_received": str(sender_user_id)}}
+        )
+
+        user_collection.update_one(
+            {"_id": sender_user_id},
+            {"$pull": {"friend_requests_sent": str(current_user_id)}}
+        )
+
+        print("Friend request rejected successfully.")
+        return True
+          
+    except ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+    finally:
+        try:
+            client.close()
+        except:
+            pass
 
 # get all posts: for the public
+@app.get("/get_all_posts")
+def get_all_posts():
+    try:
+        client = db_connection.connect()
+        db = client["Data"]
+        post_collection = db["posts"]
+
+        posts_from_db = post_collection.find()
+        posts = []
+        for post in posts_from_db:
+            #convert the object id of the post into string for formating
+            post["_id"] = str(post["_id"])
+            posts.append(post)
+
+        if not posts:
+            print("No posts found.")
+            return {"success": False, "data": []}
+
+        print("Returned all posts.")
+        return {"success": True, "data": posts}
+
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+    finally:
+        try:
+            client.close()
+        except:
+            pass
+          
+#get all posts that a user made
+@app.get("/get_post_for_user")
+def get_post_for_user(payload: TokenRequest):
+    client = None
+    try:
+        token = payload.token
+        user_info = jwt_manager.decode_jwt(token)
+        user_id = user_info["user_id"]
+
+        client = db_connection.connect()
+        db = client["Data"]
+
+        post_collection = db["posts"]
+        
+         # If your _id is an ObjectId in MongoDB:
+        posts_from_db = post_collection.find({"created_user": user_id})
+        posts = []
+        for post in posts_from_db:
+             post["_id"] = str(post["_id"])
+             posts.append(post)
+    
+        if not posts:
+            raise HTTPException(status_code=404, detail="User not found.")
+        return posts
+
+
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+    finally:
+        try:
+            client.close()
+        except:
+            pass
 
 # get all posts: that friends posted
 
@@ -495,3 +633,12 @@ def accept_friend_request(friend_request:FriendRequestModel):
 # like a post
 
 # un like a post
+
+# add comment to post
+
+# delete comment from post
+
+
+
+
+#make sure all endpoint calls are using the token and getting the current user id  
