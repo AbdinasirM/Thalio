@@ -102,7 +102,7 @@ def sign_in(request: Request, body:LoginRequest):
                 "user_id":str(user["_id"]),
                 "email":user["email"],
                 "iat": datetime.now(),
-                "exp" :datetime.now()  + timedelta(minutes=1)
+                "exp" :datetime.now()  + timedelta(minutes=5)
             }
 
             m_payload = Payload(**payload)
@@ -627,7 +627,54 @@ def get_post_for_user(payload: TokenRequest):
             pass
 
 # get all posts: that friends posted
+@app.get("/get_friends_posts")
+def get_friends_posts(payload: TokenRequest):
+    try:
+        client = db_connection.connect()
+        db = client["Data"]
+        user_collection = db["users"]
+        post_collection = db["posts"]
+        
+        token = payload.token
+        user_info = jwt_manager.decode_jwt(token)
+        user_id = user_info["user_id"]
+        
+        # get the list of friend IDs
+        user_doc = user_collection.find_one(
+            {"_id": ObjectId(user_id)},
+            {"friends": 1}
+        )
+        if not user_doc:
+            raise HTTPException(status_code=404, detail="User not found")
+        friend_ids = user_doc.get("friends", [])
+                     
+        posts_from_db = post_collection.find(
+             {"created_user": { "$in": friend_ids }}
+        )
+        posts_friends_made = []
 
+        for post in posts_from_db:
+            post["_id"] = str(post["_id"])  
+            post["created_user"] = str(post["created_user"])
+            posts_friends_made.append(post)
+             
+        return posts_friends_made   
+        
+
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+    finally:
+        try:
+            client.close()
+        except:
+            pass
+     
 # create a post
 
 # like a post
