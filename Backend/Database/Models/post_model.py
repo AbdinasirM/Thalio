@@ -2,7 +2,7 @@ from pydantic import BaseModel,Field
 from typing import List
 from uuid import UUID
 from datetime import datetime
-from Database.Models.comment_model import Comment  
+from database.Models.comment_model import Comment  
 
 class Post(BaseModel):
     post_text: str

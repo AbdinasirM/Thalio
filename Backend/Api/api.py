@@ -7,12 +7,13 @@ from gridfs import GridFSBucket
 from bson import ObjectId
 from io import BytesIO
 
-from fastapi import FastAPI, HTTPException, Request,UploadFile, File, Form
+from fastapi import Depends, FastAPI, HTTPException, Request,UploadFile, File, Form
 from pymongo.errors import PyMongoError
 from jwt import ExpiredSignatureError, InvalidTokenError
 from bson import ObjectId
 
 
+from database.Models.post_model import Post
 from database.Models.friend_request_model import FriendRequestModel
 from database.Models.user_search_request_model import UserSearchRequestModel
 from database.Models.update_password_model import UpdatePassword
@@ -647,7 +648,7 @@ def get_friends_posts(payload: TokenRequest):
         if not user_doc:
             raise HTTPException(status_code=404, detail="User not found")
         friend_ids = user_doc.get("friends", [])
-                     
+        #get posts that are created by the friend with the friend ids              
         posts_from_db = post_collection.find(
              {"created_user": { "$in": friend_ids }}
         )
@@ -659,7 +660,6 @@ def get_friends_posts(payload: TokenRequest):
             posts_friends_made.append(post)
              
         return posts_friends_made   
-        
 
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired.")
@@ -675,7 +675,65 @@ def get_friends_posts(payload: TokenRequest):
         except:
             pass
      
-# create a post
+#create a post
+@app.post("/create_a_post")
+def create_post(
+    post_text: str = Form(...),
+    token: str = Form(...),
+    file: UploadFile = File(...)
+):
+    try:
+        client = db_connection.connect()
+        db       = client["Data"]
+        file_db  = client["FileDB"]
+        users    = db["users"]
+        posts    = db["posts"]
+        fs_bucket = GridFSBucket(file_db)
+
+        # decode and normalize user ID
+        user_info     = jwt_manager.decode_jwt(token)
+        mongo_user_id = ObjectId(user_info["user_id"])
+
+        # upload the image
+        contents   = file.file.read()  # or `await file.read()` if async
+        stream     = BytesIO(contents)
+        filename   = f"{datetime.utcnow().isoformat()}.png"
+        new_file_id = fs_bucket.upload_from_stream(
+            filename,
+            stream,
+            metadata={
+                "contentType": file.content_type,
+                "user_id": mongo_user_id
+            }
+        )
+
+        # build and save the post
+        post_obj = Post(
+            post_text    = post_text,
+            post_image   = str(new_file_id),              
+            created_at   = datetime.now(timezone.utc),
+            created_user = str(mongo_user_id) 
+        )
+
+        post_dict     = post_obj.model_dump(mode="json")   
+        insert_result = posts.insert_one(post_dict)
+
+        # record the post under the user
+        users.update_one(
+            {"_id": mongo_user_id},
+            {"$push": {"posts": insert_result.inserted_id}}
+        )
+
+        return {"success": True, "post_id": str(insert_result.inserted_id)}
+
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        client.close()
 
 # like a post
 
