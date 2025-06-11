@@ -13,8 +13,11 @@ from jwt import ExpiredSignatureError, InvalidTokenError
 from bson import ObjectId
 
 
-from database.Models.like_a_post_model import LikeAPostRequestModel
+
 from database.Models.post_model import Post
+from database.Models.comment_request_model import CommentRequestModel
+from database.Models.comment_model import CommentModel
+from database.Models.like_a_post_model import LikeAPostRequestModel
 from database.Models.friend_request_model import FriendRequestModel
 from database.Models.user_search_request_model import UserSearchRequestModel
 from database.Models.update_password_model import UpdatePassword
@@ -800,7 +803,51 @@ def like_a_post(request:LikeAPostRequestModel):
         client.close()
 
 # add comment to post
+@app.post("/add_comment")
+def add_comment(request:CommentRequestModel):
+    try:
+        client = db_connection.connect()
+        db = client['Data']
+        post_collection = db['posts']
+         # decode and normalize user ID
+        user_info     = jwt_manager.decode_jwt(request.token)
+        current_user_id = ObjectId(user_info["user_id"])
 
+        post_id = ObjectId(request.post_id)
+
+        # Check if the post exists
+        post = post_collection.find_one({"_id": post_id})
+        if not post:
+            print("Post not found")
+            return "Post not found"
+        
+        new_comment = CommentModel(
+            comment_text = request.comment_text,
+            created_at = datetime.now(),
+            user_id = str(current_user_id),
+            post_id = str(post_id),
+        )
+        comment_data = new_comment.model_dump(mode="json")
+        # Add the comment to the post
+        result  = post_collection.update_one(
+            {"_id": post_id},
+            {"$push": {"comments": comment_data}}
+        )
+        if result.modified_count == 1:
+            return {"success": True, "message": "Comment added successfully"}
+        else:
+            raise HTTPException(500, "Failed to add comment")
+
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        client.close()
+
+          
 # delete comment from post
 
 

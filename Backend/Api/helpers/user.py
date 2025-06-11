@@ -8,7 +8,7 @@ from email.message import EmailMessage
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from datetime import datetime, timedelta, timezone
-from database.Models.comment_model import Comment
+from database.Models.comment_model import  CommentModel
 
 import uuid
 import secrets
@@ -339,7 +339,7 @@ class User:
 
     @staticmethod
     # add comment to post
-    def add_comment(comment:Comment):
+    def add_comment(comment:CommentModel):
         #connect to the db
         client = db_connection.connect()
         db = client['Data']

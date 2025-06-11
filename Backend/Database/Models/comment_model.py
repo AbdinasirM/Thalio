@@ -4,8 +4,7 @@ from uuid import UUID
 from datetime import datetime
 from bson import ObjectId
 
-class Comment(BaseModel):
-    comment_id:UUID
+class CommentModel(BaseModel):
     comment_text: str
     created_at: datetime
     user_id: str    # just store the user's UUID
