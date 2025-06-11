@@ -13,6 +13,7 @@ from jwt import ExpiredSignatureError, InvalidTokenError
 from bson import ObjectId
 
 
+from database.Models.like_a_post_model import LikeAPostRequestModel
 from database.Models.post_model import Post
 from database.Models.friend_request_model import FriendRequestModel
 from database.Models.user_search_request_model import UserSearchRequestModel
@@ -735,9 +736,68 @@ def create_post(
     finally:
         client.close()
 
-# like a post
+# like/dislike  a post
+@app.post("/like_or_dislike_a_post")
+def like_a_post(request:LikeAPostRequestModel):
+    try:
+        #connect to the db
+        client = db_connection.connect()
+        db = client["Data"]
+        
+        user_collection = db["users"]
+        post_collection = db["posts"]
 
-# un like a post
+        current_post_id = ObjectId(request.post_id)
+
+        # decode and normalize user ID
+        user_info     = jwt_manager.decode_jwt(request.token)
+        current_user_id = ObjectId(user_info["user_id"])
+
+        
+        #check if the user exists
+        user = user_collection.find_one(
+            {"_id":current_user_id}
+        )
+        if not user:
+            return "user doesn't exist"
+        
+        #check if the post exists
+        post = post_collection.find_one(
+            {"_id":current_post_id}
+        )
+        if not post:
+            return "post doesn't exist"
+
+        #add the user id in the likes lists inside the post
+        # try to add like
+        add_res = post_collection.update_one(
+            {"_id": current_post_id},
+            {"$addToSet": {"likes": current_user_id}}
+        )
+        if add_res.modified_count == 1:
+            return {"success": True, "liked": True}
+
+        # if it wasn’t added, pull it out
+        pull_res = post_collection.update_one(
+            {"_id": current_post_id, "likes": current_user_id},
+            {"$pull": {"likes": current_user_id}}
+        )
+        if pull_res.modified_count == 1:
+            return {"success": True, "liked": False}
+
+        # fallback
+        return {"success": False, "message": "no change made"}
+
+
+
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired.")
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token.")
+    except PyMongoError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        client.close()
 
 # add comment to post
 
