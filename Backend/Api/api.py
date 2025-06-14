@@ -847,10 +847,5 @@ def add_comment(request:CommentRequestModel):
     finally:
         client.close()
 
-          
-# delete comment from post
-
-
-
 
 #make sure all endpoint calls are using the token and getting the current user id  
