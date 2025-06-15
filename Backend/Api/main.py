@@ -170,7 +170,7 @@
 
 
 
-import gridfs
-from gridfs import GridFSBucket
-print(gridfs)           # should point to something like .../site-packages/gridfs/__init__.py
-print(GridFSBucket)     # should show the class path, e.g. <class 'gridfs.grid_file.GridFSBucket'>
+# import gridfs
+# from gridfs import GridFSBucket
+# print(gridfs)           # should point to something like .../site-packages/gridfs/__init__.py
+# print(GridFSBucket)     # should show the class path, e.g. <class 'gridfs.grid_file.GridFSBucket'>
